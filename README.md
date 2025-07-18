@@ -4,7 +4,7 @@ An interactive financial dashboard that analyzes spending patterns from CSV tran
 
 ## 🚀 Live Demo
 
-**[View Live Dashboard](https://ajrichter.github.io/spendthrift/)**
+**[View Live Dashboard](https://ajrichter.github.io/spending-dashboard/)**
 
 ## ✨ Features
 
@@ -61,6 +61,37 @@ The dashboard includes realistic sample data featuring:
 - Common spending categories (Groceries, Restaurants, Gas, etc.)
 - Realistic transaction amounts and patterns
 - Multiple account types (Credit Card, Checking, Savings)
+
+## 🏃‍♂️ Run Locally
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/ajrichter/spending-dashboard.git
+   cd spending-dashboard
+   ```
+
+2. Open `index.html` in your browser:
+   ```bash
+   # macOS
+   open index.html
+   
+   # Linux
+   xdg-open index.html
+   
+   # Windows
+   start index.html
+   ```
+
+3. Or serve with a local web server:
+   ```bash
+   # Python 3
+   python -m http.server 8000
+   
+   # Node.js (if you have npx)
+   npx serve .
+   
+   # Then visit http://localhost:8000
+   ```
 
 ## 🔗 Related Tools
 

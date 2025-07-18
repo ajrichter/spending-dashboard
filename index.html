@@ -289,6 +289,20 @@
 
         // Generate sample CSV data
         function generateSampleData() {
+            // Start with 10 default transactions
+            let csv = `Date,Account,Description,Category,Tags,Amount
+01-15-25,Credit Card,Whole Foods Market,Groceries,,-87.43
+01-16-25,Checking,Shell Gas Station,Gas,,-52.30
+01-17-25,Credit Card,Starbucks Coffee,Restaurants,,-6.75
+01-18-25,Savings,Direct Deposit Salary,Income,,2500.00
+01-19-25,Credit Card,Amazon Purchase,Shopping,,-124.99
+01-20-25,Credit Card,Electric Bill,Utilities,,-89.50
+01-21-25,Checking,Netflix Subscription,Entertainment,,-15.99
+01-22-25,Credit Card,CVS Pharmacy,Healthcare,,-23.45
+01-23-25,Credit Card,Target Store,Shopping,,-67.89
+01-24-25,Checking,Local Restaurant,Restaurants,,-34.50
+`;
+
             const categories = ['Groceries', 'Restaurants', 'Gas', 'Entertainment', 'Shopping', 'Utilities', 'Healthcare'];
             const accounts = ['Credit Card', 'Checking', 'Savings'];
             const merchants = {
@@ -300,8 +314,6 @@
                 'Utilities': ['Electric Company', 'Water Dept', 'Internet Provider', 'Phone Company'],
                 'Healthcare': ['Pharmacy', 'Doctor Office', 'Dentist', 'Insurance']
             };
-
-            let csv = 'Date,Account,Description,Category,Tags,Amount\n';
             
             // Generate 12 months of sample data
             for (let month = 1; month <= 12; month++) {
