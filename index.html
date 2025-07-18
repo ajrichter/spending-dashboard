@@ -159,6 +159,86 @@
             margin: 10px 0;
             padding-left: 20px;
         }
+        .store-management {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .store-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        .store-list {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .store-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #007AFF;
+        }
+        .store-item.excluded {
+            border-left-color: #dc3545;
+            opacity: 0.7;
+        }
+        .store-spending {
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .store-controls button {
+            padding: 5px 10px;
+            margin-left: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-remove {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-add {
+            background: #28a745;
+            color: white;
+        }
+        .budget-impact {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .impact-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .impact-value.positive {
+            color: #28a745;
+        }
+        .impact-value.negative {
+            color: #dc3545;
+        }
+        .add-store-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .add-store-form input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -196,6 +276,41 @@
         </div>
 
         <div id="dashboard" style="display: none;">
+            <div class="store-management">
+                <h3>🏪 Store Management & Budget Impact</h3>
+                <p>Add or remove stores to see how it affects your spending patterns and budget.</p>
+                
+                <div class="store-grid">
+                    <div class="store-list">
+                        <h4>Active Stores</h4>
+                        <div id="activeStores"></div>
+                        
+                        <div class="add-store-form">
+                            <input type="text" id="newStoreName" placeholder="Enter store name..." />
+                            <button onclick="addStore()" class="btn-add">Add Store</button>
+                        </div>
+                    </div>
+                    
+                    <div class="budget-impact">
+                        <h4>Budget Impact Analysis</h4>
+                        <div id="budgetImpact">
+                            <div class="impact-item">
+                                <span>Current Monthly Spending:</span>
+                                <span id="currentSpending" class="impact-value">$0</span>
+                            </div>
+                            <div class="impact-item">
+                                <span>Projected Savings:</span>
+                                <span id="projectedSavings" class="impact-value positive">$0</span>
+                            </div>
+                            <div class="impact-item">
+                                <span>Excluded Store Spending:</span>
+                                <span id="excludedSpending" class="impact-value negative">$0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value" id="total-spent">$0</div>
@@ -267,6 +382,8 @@
     <script>
         let transactionData = [];
         let chartInstances = {};
+        let excludedStores = new Set();
+        let storeSpending = {};
 
         // File upload handler
         document.getElementById('csvFile').addEventListener('change', function(event) {
@@ -289,30 +406,30 @@
 
         // Generate sample CSV data
         function generateSampleData() {
-            // Start with 10 default transactions
+            // Start with 10 default transactions with specific store names
             let csv = `Date,Account,Description,Category,Tags,Amount
 01-15-25,Credit Card,Whole Foods Market,Groceries,,-87.43
 01-16-25,Checking,Shell Gas Station,Gas,,-52.30
 01-17-25,Credit Card,Starbucks Coffee,Restaurants,,-6.75
 01-18-25,Savings,Direct Deposit Salary,Income,,2500.00
-01-19-25,Credit Card,Amazon Purchase,Shopping,,-124.99
-01-20-25,Credit Card,Electric Bill,Utilities,,-89.50
-01-21-25,Checking,Netflix Subscription,Entertainment,,-15.99
+01-19-25,Credit Card,Amazon,Shopping,,-124.99
+01-20-25,Credit Card,PG&E Electric,Utilities,,-89.50
+01-21-25,Checking,Netflix,Entertainment,,-15.99
 01-22-25,Credit Card,CVS Pharmacy,Healthcare,,-23.45
-01-23-25,Credit Card,Target Store,Shopping,,-67.89
-01-24-25,Checking,Local Restaurant,Restaurants,,-34.50
+01-23-25,Credit Card,Target,Shopping,,-67.89
+01-24-25,Checking,Chipotle Mexican Grill,Restaurants,,-34.50
 `;
 
             const categories = ['Groceries', 'Restaurants', 'Gas', 'Entertainment', 'Shopping', 'Utilities', 'Healthcare'];
             const accounts = ['Credit Card', 'Checking', 'Savings'];
             const merchants = {
-                'Groceries': ['Whole Foods', 'Trader Joes', 'Safeway', 'Costco'],
-                'Restaurants': ['Chipotle', 'Starbucks', 'Local Cafe', 'Pizza Place'],
-                'Gas': ['Shell', 'Chevron', 'BP', 'Exxon'],
-                'Entertainment': ['Netflix', 'Spotify', 'Movie Theater', 'Concert Venue'],
-                'Shopping': ['Amazon', 'Target', 'Best Buy', 'Local Store'],
-                'Utilities': ['Electric Company', 'Water Dept', 'Internet Provider', 'Phone Company'],
-                'Healthcare': ['Pharmacy', 'Doctor Office', 'Dentist', 'Insurance']
+                'Groceries': ['Whole Foods Market', 'Trader Joe\'s', 'Safeway', 'Costco Wholesale', 'Kroger', 'Publix'],
+                'Restaurants': ['Chipotle Mexican Grill', 'Starbucks Coffee', 'McDonald\'s', 'Subway', 'Olive Garden', 'Taco Bell'],
+                'Gas': ['Shell Gas Station', 'Chevron', 'BP', 'Exxon Mobil', '76 Gas Station', 'Arco'],
+                'Entertainment': ['Netflix', 'Spotify Premium', 'AMC Theatres', 'Disney+', 'Apple Music', 'Hulu'],
+                'Shopping': ['Amazon', 'Target', 'Best Buy', 'Walmart', 'Home Depot', 'Macy\'s'],
+                'Utilities': ['PG&E Electric', 'Comcast Internet', 'Verizon Wireless', 'AT&T', 'Water Department', 'Waste Management'],
+                'Healthcare': ['CVS Pharmacy', 'Walgreens', 'Kaiser Permanente', 'Urgent Care', 'Dental Office', 'Vision Center']
             };
             
             // Generate 12 months of sample data
@@ -399,8 +516,14 @@
             Object.values(chartInstances).forEach(chart => chart.destroy());
             chartInstances = {};
 
+            // Calculate store spending
+            calculateStoreSpending();
+            
             // Calculate statistics
             updateStats();
+            
+            // Update store management UI
+            updateStoreManagement();
             
             // Create charts
             createCategoryChart();
@@ -413,7 +536,10 @@
         }
 
         function updateStats() {
-            const expenses = transactionData.filter(t => t.amount < 0);
+            const expenses = transactionData.filter(t => 
+                t.amount < 0 && 
+                !excludedStores.has(t.description.trim())
+            );
             const totalSpent = Math.abs(expenses.reduce((sum, t) => sum + t.amount, 0));
             
             // Get unique months for average calculation
@@ -437,7 +563,11 @@
         }
 
         function createCategoryChart() {
-            const expenses = transactionData.filter(t => t.amount < 0 && t.category);
+            const expenses = transactionData.filter(t => 
+                t.amount < 0 && 
+                t.category && 
+                !excludedStores.has(t.description.trim())
+            );
             const categoryTotals = {};
             
             expenses.forEach(t => {
@@ -477,7 +607,10 @@
         }
 
         function createMonthlyChart() {
-            const expenses = transactionData.filter(t => t.amount < 0);
+            const expenses = transactionData.filter(t => 
+                t.amount < 0 && 
+                !excludedStores.has(t.description.trim())
+            );
             const monthlyTotals = {};
             
             expenses.forEach(t => {
@@ -519,7 +652,10 @@
         }
 
         function createAccountChart() {
-            const expenses = transactionData.filter(t => t.amount < 0);
+            const expenses = transactionData.filter(t => 
+                t.amount < 0 && 
+                !excludedStores.has(t.description.trim())
+            );
             const accountTotals = {};
             
             expenses.forEach(t => {
@@ -556,7 +692,10 @@
         }
 
         function createWeeklyChart() {
-            const expenses = transactionData.filter(t => t.amount < 0);
+            const expenses = transactionData.filter(t => 
+                t.amount < 0 && 
+                !excludedStores.has(t.description.trim())
+            );
             const dayOfWeekTotals = Array(7).fill(0);
             const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             
@@ -616,6 +755,115 @@
                 </tr>
             `).join('');
         }
+
+        // Store management functions
+        function calculateStoreSpending() {
+            storeSpending = {};
+            const expenses = transactionData.filter(t => t.amount < 0);
+            
+            expenses.forEach(t => {
+                const storeName = t.description.trim();
+                if (storeName) {
+                    storeSpending[storeName] = (storeSpending[storeName] || 0) + Math.abs(t.amount);
+                }
+            });
+        }
+
+        function updateStoreManagement() {
+            const activeStoresDiv = document.getElementById('activeStores');
+            const sortedStores = Object.entries(storeSpending)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 15); // Show top 15 stores
+
+            activeStoresDiv.innerHTML = sortedStores.map(([store, amount]) => {
+                const isExcluded = excludedStores.has(store);
+                return `
+                    <div class="store-item ${isExcluded ? 'excluded' : ''}">
+                        <div>
+                            <div style="font-weight: bold;">${store}</div>
+                            <div class="store-spending">$${amount.toFixed(2)}</div>
+                        </div>
+                        <div class="store-controls">
+                            <button onclick="toggleStore('${store.replace(/'/g, "\\'")}', this)" 
+                                    class="${isExcluded ? 'btn-add' : 'btn-remove'}">
+                                ${isExcluded ? 'Include' : 'Exclude'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            updateBudgetImpact();
+        }
+
+        function toggleStore(storeName, button) {
+            if (excludedStores.has(storeName)) {
+                excludedStores.delete(storeName);
+                button.textContent = 'Exclude';
+                button.className = 'btn-remove';
+                button.parentElement.parentElement.classList.remove('excluded');
+            } else {
+                excludedStores.add(storeName);
+                button.textContent = 'Include';
+                button.className = 'btn-add';
+                button.parentElement.parentElement.classList.add('excluded');
+            }
+            
+            updateBudgetImpact();
+            updateCharts();
+        }
+
+        function addStore() {
+            const newStoreInput = document.getElementById('newStoreName');
+            const storeName = newStoreInput.value.trim();
+            
+            if (storeName && !storeSpending[storeName]) {
+                storeSpending[storeName] = 0;
+                newStoreInput.value = '';
+                updateStoreManagement();
+            }
+        }
+
+        function updateBudgetImpact() {
+            const expenses = transactionData.filter(t => t.amount < 0);
+            const totalSpent = Math.abs(expenses.reduce((sum, t) => sum + t.amount, 0));
+            
+            const excludedSpent = expenses
+                .filter(t => excludedStores.has(t.description.trim()))
+                .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+            
+            const currentSpent = totalSpent - excludedSpent;
+            
+            // Get unique months for monthly calculation
+            const months = new Set(expenses.map(t => t.date.substring(0, 7)));
+            const monthlySpending = totalSpent / months.size;
+            const monthlySavings = excludedSpent / months.size;
+            const currentMonthly = currentSpent / months.size;
+            
+            document.getElementById('currentSpending').textContent = `$${currentMonthly.toFixed(2)}`;
+            document.getElementById('projectedSavings').textContent = `$${monthlySavings.toFixed(2)}`;
+            document.getElementById('excludedSpending').textContent = `$${(excludedSpent / months.size).toFixed(2)}`;
+        }
+
+        function updateCharts() {
+            createCategoryChart();
+            createMonthlyChart();
+            createAccountChart();
+            createWeeklyChart();
+            updateStats();
+        }
+
+        // Add enter key support for adding stores
+        document.addEventListener('DOMContentLoaded', function() {
+            const newStoreInput = document.getElementById('newStoreName');
+            if (newStoreInput) {
+                newStoreInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        addStore();
+                    }
+                });
+            }
+        });
 
         // Auto-load sample data on page load
         window.addEventListener('load', function() {
